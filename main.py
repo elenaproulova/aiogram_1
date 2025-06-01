@@ -3,6 +3,7 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 from config import TOKEN, API_KEY
+import requests
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -11,34 +12,22 @@ dp = Dispatcher()
 async def get_weather():
     city = "Yekaterinburg"
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric&lang=ru"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                weather_desc = data['weather'][0]['description'].capitalize()
-                temp = data['main']['temp']
-
-                return (
-                    f"Погода в Екатеринбурге:\n"
-                    f"{weather_desc}\n"
-                    f"Температура: {temp}°C\n"
-                )
-            else:
-                return "Не удалось получить данные о погоде."
+    response = requests.get(url)
+    data = response.json()
+    temp = data['main']['temp']
+    return (
+        f"Погода в Екатеринбурге:\n"
+        f"Температура: {temp}°C\n"
+    )
 
 @dp.message(Command('weather'))
 async def weather(message: Message):
-    weather_info = await get_weather()
-    await message.answer(weather_info)
+    await message.answer(await get_weather())
 
 
-@dp.message(Command('weather'))
-async def weather(message: Message):
-    await message.answer("Этот бот умеет выполнять команды:\n/start \n/help \n/weather")
-
-#@dp.message(Command('help'))
-#async def help(message: Message):
-#    await message.answer("Этот бот умеет выполнять команды:\n/start \n/help \n/weather")
+@dp.message(Command('help'))
+async def help(message: Message):
+   await message.answer("Этот бот умеет выполнять команды:\n/start \n/help \n/weather")
 
 @dp.message(CommandStart())
 async def start(message: Message):
