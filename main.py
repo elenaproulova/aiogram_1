@@ -1,8 +1,9 @@
 import asyncio, aiohttp
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 from config import TOKEN, API_KEY
+from googletrans import Translator
 import requests
 
 bot = Bot(token=TOKEN)
@@ -19,6 +20,16 @@ async def get_weather():
         f"Погода в Екатеринбурге:\n"
         f"Температура: {temp}°C\n"
     )
+@dp.message(F.photo)
+async def react_photo(message: Message):
+    await bot.download(message.photo[-1], destination=f'tmp/{message.photo[-1].file_id}.jpg')
+
+@dp.message(Command('voice'))
+async def voice(message: Message):
+    voice = FSInputFile("1718883178.ogg")
+    await message.answer_voice(voice)
+
+
 
 @dp.message(Command('weather'))
 async def weather(message: Message):
@@ -31,8 +42,19 @@ async def help(message: Message):
 
 @dp.message(CommandStart())
 async def start(message: Message):
-    await message.answer("Привет, я бот!")
+    await message.answer(f'Привет, {message.from_user.first_name}')
 
+@dp.message()
+async def handle_text(message: Message):
+    original_text = message.text
+    translator = Translator()
+    try:
+        # Переводим текст на английский
+        translated = translator.translate(original_text, dest='en').text
+        await message.answer(f"Перевод на английский:\n{translated}")
+    except Exception as e:
+        await message.answer("Произошла ошибка при переводе.")
+        print(f"Ошибка перевода: {e}")
 
 async def main():
     await dp.start_polling(bot)
