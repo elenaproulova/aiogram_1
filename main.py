@@ -2,59 +2,69 @@ import asyncio, aiohttp
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, FSInputFile
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.storage.memory import MemoryStorage
 from config import TOKEN, API_KEY
-from googletrans import Translator
+import logging
 import requests
+import sqlite3
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+logging.basicConfig(level=logging.INFO)
 
-async def get_weather():
-    city = "Yekaterinburg"
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric&lang=ru"
-    response = requests.get(url)
-    data = response.json()
-    temp = data['main']['temp']
-    return (
-        f"Погода в Екатеринбурге:\n"
-        f"Температура: {temp}°C\n"
-    )
-@dp.message(F.photo)
-async def react_photo(message: Message):
-    await bot.download(message.photo[-1], destination=f'tmp/{message.photo[-1].file_id}.jpg')
+class Form(StatesGroup):
+    username = State()
+    age = State()
+    grade = State()
 
-@dp.message(Command('voice'))
-async def voice(message: Message):
-    voice = FSInputFile("1718883178.ogg")
-    await message.answer_voice(voice)
+def init_db():
+    conn = sqlite3.connect('school_data.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS students (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    age INTEGER,
+    grade TEXT)''')
+    conn.commit()
+    conn.close()
 
-
-
-@dp.message(Command('weather'))
-async def weather(message: Message):
-    await message.answer(await get_weather())
-
-
-@dp.message(Command('help'))
-async def help(message: Message):
-   await message.answer("Этот бот умеет выполнять команды:\n/start \n/help \n/weather")
+init_db()
 
 @dp.message(CommandStart())
-async def start(message: Message):
-    await message.answer(f'Привет, {message.from_user.first_name}')
+async def start(message: Message, state: FSMContext):
+    await message.answer(f'Привет, как тебя зовут?')
+    await state.set_state(Form.username)
 
-@dp.message()
-async def handle_text(message: Message):
-    original_text = message.text
-    translator = Translator()
-    try:
-        # Переводим текст на английский
-        translated = translator.translate(original_text, dest='en').text
-        await message.answer(f"Перевод на английский:\n{translated}")
-    except Exception as e:
-        await message.answer("Произошла ошибка при переводе.")
-        print(f"Ошибка перевода: {e}")
+@dp.message(Form.username)
+async def name(message: Message, state: FSMContext):
+    await state.update_data(username=message.text)
+    await message.answer("Сколько тебе лет?")
+    await state.set_state(Form.age)
+
+@dp.message(Form.age)
+async def age(message: Message, state: FSMContext):
+    await state.update_data(age=message.text)
+    await message.answer("Из какого ты класса?")
+    await state.set_state(Form.grade)
+
+@dp.message(Form.grade)
+async def grade(message: Message, state: FSMContext):
+    await state.update_data(grade=message.text)
+    user_data = await state.get_data()
+
+    conn = sqlite3.connect('school_data.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+    INSERT INTO students (username, age, grade) VALUES (?, ?, ?)''', (user_data['username'], user_data['age'], user_data['grade']))
+    conn.commit()
+    conn.close()
+
+
+
 
 async def main():
     await dp.start_polling(bot)
