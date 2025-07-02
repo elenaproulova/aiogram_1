@@ -16,7 +16,7 @@ async def hello_button(message: Message):
    await message.answer(f'Привет, {message.from_user.first_name}')
 
 @dp.message(F.text == "Пока!")
-async def hello_button(message: Message):
+async def buy_button(message: Message):
    await message.answer(f'До свидания, {message.from_user.first_name}')
 
 @dp.message(Command('links'))
@@ -30,15 +30,19 @@ async def news(callback: CallbackQuery):
 
 @dp.callback_query(F.data == 'music')
 async def music(callback: CallbackQuery):
-    await callback.answer("Музыка подгружается", show_alert=True)
     await callback.message.answer('Музыка по ссылке')
 
 @dp.callback_query(F.data == 'video')
 async def video(callback: CallbackQuery):
-    await callback.answer("Видео подгружается", show_alert=True)
-    await callback.message.answer('Видео по ссылке')
+   await callback.message.answer('Видео по ссылке')
 
+@dp.message(Command('dynamic'))
+async def dynamic(message: Message):
+   await message.answer(f'Ссылки на контент', reply_markup=kb.inline_keyboard_test_2)
 
+@dp.callback_query(F.data == 'more')
+async def news(callback: CallbackQuery):
+    await callback.message.edit_text('Показать больше:', reply_markup=kb.test_keyboard())
 
 async def get_weather():
     city = "Yekaterinburg"
