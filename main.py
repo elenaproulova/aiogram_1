@@ -1,13 +1,43 @@
 import asyncio, aiohttp
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, FSInputFile
+from aiogram.types import Message, FSInputFile, CallbackQuery
 from config import TOKEN, API_KEY
-from googletrans import Translator
+# from googletrans import Translator
 import requests
+import keyboard as kb
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+
+
+@dp.message(F.text == "Привет!")
+async def hello_button(message: Message):
+   await message.answer(f'Привет, {message.from_user.first_name}')
+
+@dp.message(F.text == "Пока!")
+async def hello_button(message: Message):
+   await message.answer(f'До свидания, {message.from_user.first_name}')
+
+@dp.message(Command('links'))
+async def link(message: Message):
+   await message.answer(f'Ссылки на контент', reply_markup=kb.inline_keyboard_test)
+
+@dp.callback_query(F.data == 'news')
+async def news(callback: CallbackQuery):
+    await callback.answer("Новости подгружаются", show_alert=True)
+    await callback.message.answer('Новости по ссылке')
+
+@dp.callback_query(F.data == 'music')
+async def music(callback: CallbackQuery):
+    await callback.answer("Музыка подгружается", show_alert=True)
+    await callback.message.answer('Музыка по ссылке')
+
+@dp.callback_query(F.data == 'video')
+async def video(callback: CallbackQuery):
+    await callback.answer("Видео подгружается", show_alert=True)
+    await callback.message.answer('Видео по ссылке')
+
 
 
 async def get_weather():
@@ -42,19 +72,19 @@ async def help(message: Message):
 
 @dp.message(CommandStart())
 async def start(message: Message):
-    await message.answer(f'Привет, {message.from_user.first_name}')
+    await message.answer(f'Привет, {message.from_user.first_name}', reply_markup=kb.main)
 
-@dp.message()
-async def handle_text(message: Message):
-    original_text = message.text
-    translator = Translator()
-    try:
-        # Переводим текст на английский
-        translated = translator.translate(original_text, dest='en').text
-        await message.answer(f"Перевод на английский:\n{translated}")
-    except Exception as e:
-        await message.answer("Произошла ошибка при переводе.")
-        print(f"Ошибка перевода: {e}")
+# @dp.message()
+# async def handle_text(message: Message):
+#     original_text = message.text
+#     translator = Translator()
+#     try:
+#         # Переводим текст на английский
+#         translated = translator.translate(original_text, dest='en').text
+#         await message.answer(f"Перевод на английский:\n{translated}")
+#     except Exception as e:
+#         await message.answer("Произошла ошибка при переводе.")
+#         print(f"Ошибка перевода: {e}")
 
 async def main():
     await dp.start_polling(bot)
