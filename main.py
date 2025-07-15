@@ -1,94 +1,63 @@
 import asyncio, aiohttp
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, FSInputFile, CallbackQuery
-from config import TOKEN, API_KEY
-# from googletrans import Translator
+from config import TOKEN
 import requests
-import keyboard as kb
+
+
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+# def get_city():
+#     url = 'https://kladr-api.ru/api.php'
+#     response = requests.get(url)
+#     data = response.json()
+#
+#
+# def get_okato():
 
-@dp.message(F.text == "Привет!")
-async def hello_button(message: Message):
-   await message.answer(f'Привет, {message.from_user.first_name}')
+# Функция для получения кода ОКАТО по названию города
+async def get_okato(city_name):
+    url = 'https://kladr-api.ru/api.php'
+    params = {
+        'contentType': 'city',
+        'q': city_name,
+        'limit': 1,
+        'apiKey': ''  # Можно оставить пустым, если API не требует ключ
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, params=params) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                if data and 'result' in data and data['result']:
+                    city = data['result'][0]
+                    okato = city.get('okato', 'Код ОКАТО не найден')
+                    name = city.get('name', 'Неизвестно')
+                    return f"Город: {name}\nКод ОКАТО: {okato}"
+                else:
+                    return "Город не найден или нет данных."
+            else:
+                return "Ошибка при обращении к API."
 
-@dp.message(F.text == "Пока!")
-async def buy_button(message: Message):
-   await message.answer(f'До свидания, {message.from_user.first_name}')
-
-@dp.message(Command('links'))
-async def link(message: Message):
-   await message.answer(f'Ссылки на контент', reply_markup=kb.inline_keyboard_test)
-
-@dp.callback_query(F.data == 'news')
-async def news(callback: CallbackQuery):
-    await callback.answer("Новости подгружаются", show_alert=True)
-    await callback.message.answer('Новости по ссылке')
-
-@dp.callback_query(F.data == 'music')
-async def music(callback: CallbackQuery):
-    await callback.message.answer('Музыка по ссылке')
-
-@dp.callback_query(F.data == 'video')
-async def video(callback: CallbackQuery):
-   await callback.message.answer('Видео по ссылке')
-
-@dp.message(Command('dynamic'))
-async def dynamic(message: Message):
-   await message.answer(f'Ссылки на контент', reply_markup=kb.inline_keyboard_test_2)
-
-@dp.callback_query(F.data == 'more')
-async def news(callback: CallbackQuery):
-    await callback.message.edit_text('Показать больше:', reply_markup=kb.test_keyboard())
-
-async def get_weather():
-    city = "Yekaterinburg"
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric&lang=ru"
-    response = requests.get(url)
-    data = response.json()
-    temp = data['main']['temp']
-    return (
-        f"Погода в Екатеринбурге:\n"
-        f"Температура: {temp}°C\n"
-    )
-@dp.message(F.photo)
-async def react_photo(message: Message):
-    await bot.download(message.photo[-1], destination=f'tmp/{message.photo[-1].file_id}.jpg')
-
-@dp.message(Command('voice'))
-async def voice(message: Message):
-    voice = FSInputFile("1718883178.ogg")
-    await message.answer_voice(voice)
+# @dp.message(commands=['start', 'help'])
+# async def send_welcome(message: types.Message):
+#     await message.reply("Введите название города, чтобы получить код ОКАТО:")
 
 
+@dp.message(Command("start"))
+async def start_command(message: Message):
+   await message.answer("Привет! Напиши мне название города, и я пришлю тебе его ОКАТО.")
 
-@dp.message(Command('weather'))
-async def weather(message: Message):
-    await message.answer(await get_weather())
+
+@dp.message()
+async def handle_city(message: types.Message):
+    city_name = message.text.strip()
+    response = await get_okato(city_name)
+    await message.reply(response)
 
 
-@dp.message(Command('help'))
-async def help(message: Message):
-   await message.answer("Этот бот умеет выполнять команды:\n/start \n/help \n/weather")
-
-@dp.message(CommandStart())
-async def start(message: Message):
-    await message.answer(f'Привет, {message.from_user.first_name}', reply_markup=kb.main)
-
-# @dp.message()
-# async def handle_text(message: Message):
-#     original_text = message.text
-#     translator = Translator()
-#     try:
-#         # Переводим текст на английский
-#         translated = translator.translate(original_text, dest='en').text
-#         await message.answer(f"Перевод на английский:\n{translated}")
-#     except Exception as e:
-#         await message.answer("Произошла ошибка при переводе.")
-#         print(f"Ошибка перевода: {e}")
 
 async def main():
     await dp.start_polling(bot)
