@@ -1,3 +1,3 @@
-TOKEN = "8022656828:AAGoJrXZV52fgqzYmDeAPAIectuwFu538q4"
+TOKEN = "_"
 
-API_KEY = "16b01f1aacaf102fa8a19c43fa3d2466"
+API_KEY = "-"
