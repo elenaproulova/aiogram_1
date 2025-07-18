@@ -42,7 +42,7 @@ async def dynamic(message: Message):
 
 @dp.callback_query(F.data == 'more')
 async def news(callback: CallbackQuery):
-    await callback.message.edit_text('Показать больше:', reply_markup=kb.test_keyboard())
+    await callback.message.edit_text('Показать больше:', reply_markup=kb.test_keyboard)
 
 async def get_weather():
     city = "Yekaterinburg"
