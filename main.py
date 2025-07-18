@@ -44,6 +44,15 @@ async def dynamic(message: Message):
 async def news(callback: CallbackQuery):
     await callback.message.edit_text('Показать больше:', reply_markup=kb.test_keyboard)
 
+@dp.callback_query(F.data == 'option1')
+async def video(callback: CallbackQuery):
+   await callback.message.answer('Опция 1')
+
+@dp.callback_query(F.data == 'option2')
+async def video(callback: CallbackQuery):
+   await callback.message.answer('Опция 2')
+
+
 async def get_weather():
     city = "Yekaterinburg"
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric&lang=ru"
@@ -78,17 +87,7 @@ async def help(message: Message):
 async def start(message: Message):
     await message.answer(f'Привет, {message.from_user.first_name}', reply_markup=kb.main)
 
-# @dp.message()
-# async def handle_text(message: Message):
-#     original_text = message.text
-#     translator = Translator()
-#     try:
-#         # Переводим текст на английский
-#         translated = translator.translate(original_text, dest='en').text
-#         await message.answer(f"Перевод на английский:\n{translated}")
-#     except Exception as e:
-#         await message.answer("Произошла ошибка при переводе.")
-#         print(f"Ошибка перевода: {e}")
+
 
 async def main():
     await dp.start_polling(bot)
